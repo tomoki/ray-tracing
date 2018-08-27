@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 {
     int nx = 400;
     int ny = 200;
-    int ns = 100;
+    int ns = 200;
 
     std::cout << "P3\n"
               << nx << " " << ny << "\n"
@@ -92,10 +92,10 @@ int main(int argc, char** argv)
     // camera cam(vec3(-1, 1, 0.5), vec3(0, 0, -1), vec3(0, 1, 0), 90, float(nx)/float(ny));
     // vec3 lookfrom(3, 3, 2);
     // vec3 lookat(0, 0, -1);
-    vec3 lookfrom(6, 2, 0);
-    vec3 lookat(0, 0, 0);
+    vec3 lookfrom(12, 2, 3);
+    vec3 lookat(0, 0.5, 0);
     float dist_to_focus = (lookfrom - lookat).length();
-    float aperture = 1.0;
+    float aperture = 0;
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus);
 
     for(int j=ny-1; j>=0; j--) {
