@@ -23,3 +23,12 @@ vec3 random_in_unit_sphere()
     } while (p.length() >= 1.0);
     return p;
 }
+
+vec3 random_in_unit_disk()
+{
+    vec3 p;
+    do {
+        p = 2.0 * vec3(rand_float() - 0.5, rand_float() - 0.5, 0);
+    } while (dot(p, p) >= 1.0);
+    return p;
+}
