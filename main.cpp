@@ -4,6 +4,7 @@
 #include "ray.h"
 #include "hitable_list.h"
 #include "material.h"
+#include "moving_sphere.h"
 #include "sphere.h"
 
 #include <climits>
@@ -43,7 +44,10 @@ hitable *random_scene()
             vec3 center(a + 0.9 * rand_float(), 0.2, b + 0.9 * rand_float());
             if ((center - vec3(4, 0.2, 0)).length() > 0.9) {
                 if (choose_mat < 0.8)
-                    list[i++] = new sphere(center, 0.2,
+                    list[i++] = new moving_sphere(
+                                    center,
+                                    center + vec3(0, 0.5 * rand_float(), 0),
+                                    0, 1, 0.2,
                                     new lambertian(vec3(
                                         rand_float() * rand_float(),
                                         rand_float() * rand_float(),
@@ -70,9 +74,9 @@ hitable *random_scene()
 
 int main(int argc, char** argv)
 {
-    int nx = 400;
-    int ny = 200;
-    int ns = 200;
+    int nx = 800;
+    int ny = 400;
+    int ns = 100;
 
     std::cout << "P3\n"
               << nx << " " << ny << "\n"
@@ -96,7 +100,7 @@ int main(int argc, char** argv)
     vec3 lookat(0, 0.5, 0);
     float dist_to_focus = (lookfrom - lookat).length();
     float aperture = 0;
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus);
+    camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     for(int j=ny-1; j>=0; j--) {
         for(int i=0; i<nx; i++) {
@@ -109,7 +113,7 @@ int main(int argc, char** argv)
                 total_col += color(r, world);
             }
             total_col /= float(ns);
-            // gamma ほせい
+            // gamma ほせい 
             total_col = vec3(sqrt(total_col[0]), sqrt(total_col[1]), sqrt(total_col[2]));
 
             int ir = (int) (255 * total_col.r());

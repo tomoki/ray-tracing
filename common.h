@@ -32,3 +32,6 @@ vec3 random_in_unit_disk()
     } while (dot(p, p) >= 1.0);
     return p;
 }
+
+inline float ffmin(float a, float b) { return a < b ? a : b; }
+inline float ffmax(float a, float b) { return a > b ? a : b; }
