@@ -25,7 +25,7 @@ public:
         vertical = 2  * half_height * focus_dist * v;
     }
 
-    ray get_ray(float s, float t) {
+    ray get_ray(float s, float t) const {
         vec3 rd = lens_radius * random_in_unit_disk();
         vec3 offset = u * rd.x() + v * rd.y();
         float time = time0 + rand_float() * (time1-time0);
