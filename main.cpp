@@ -3,6 +3,7 @@
 #include "common.h"
 #include "vec3.h"
 #include "ray.h"
+#include "texture.h"
 #include "hitable_list.h"
 #include "material.h"
 #include "moving_sphere.h"
@@ -48,10 +49,10 @@ hitable *random_scene()
                                     center,
                                     center + vec3(0, 0.5 * rand_float(), 0),
                                     0, 1, 0.2,
-                                    new lambertian(vec3(
+                                    new lambertian(new constant_texture(vec3(
                                         rand_float() * rand_float(),
                                         rand_float() * rand_float(),
-                                        rand_float() * rand_float())));
+                                        rand_float() * rand_float()))));
                 else if(choose_mat < 0.95)
                     list[i++] = new sphere(center, 0.2,
                                     new metal(vec3(
@@ -69,9 +70,9 @@ hitable *random_scene()
 
     hitable** ret = new hitable*[10];
     ret[0] = new bvh_node(list, i, 0, 1);
-    ret[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+    ret[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
     ret[2] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    ret[3] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
+    ret[3] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
     ret[4] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
     return new hitable_list(ret, 5);
 }
