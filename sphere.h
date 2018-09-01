@@ -6,13 +6,12 @@ class sphere : public hitable {
 public:
     sphere() {}
     sphere(vec3 cen, float r, material* mat) : center(cen), radius(r), material(mat) {}
-    virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const override;
-
+    bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const override;
+    bool bounding_box(float t0, float t1, aabb& box) const override;
     vec3 center;
     float radius;
     material* material;
 };
-
 
 bool sphere:: hit(const ray& r, float tmin, float tmax, hit_record& rec) const
 {
@@ -41,4 +40,11 @@ bool sphere:: hit(const ray& r, float tmin, float tmax, hit_record& rec) const
         }
     }
     return false;
+}
+
+bool sphere::bounding_box(float t0, float t1, aabb& box) const
+{
+    box = aabb(center - vec3(radius, radius, radius),
+               center + vec3(radius, radius, radius));
+    return true;
 }

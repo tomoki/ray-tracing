@@ -1,6 +1,8 @@
 #pragma once
 
+#include "aabb.h"
 #include "hitable.h"
+#include "sphere.h"
 
 class moving_sphere : public hitable {
 public:
@@ -14,7 +16,8 @@ public:
                      time1(t1),
                      radius(r),
                      material(mat) { }
-    virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const override;
+    bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const override;
+    bool bounding_box(float t0, float t1, aabb& box) const override;
 
     vec3 center(float time) const;
     vec3 center0, center1;
@@ -55,4 +58,14 @@ bool moving_sphere::hit(const ray& r, float tmin, float tmax, hit_record& rec) c
         }
     }
     return false;
+}
+
+bool moving_sphere::bounding_box(float t0, float t1, aabb& box) const
+{
+    aabb a0, a1;
+    // always return true.
+    sphere(center(t0), radius, material).bounding_box(t0, t1, a0);
+    sphere(center(t1), radius, material).bounding_box(t0, t1, a1);
+    box = surrounding_box(a0, a1);
+    return true;
 }

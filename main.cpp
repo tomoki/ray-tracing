@@ -1,3 +1,4 @@
+#include "bvh.h"
 #include "camera.h"
 #include "common.h"
 #include "vec3.h"
@@ -36,8 +37,7 @@ hitable *random_scene()
 {
     int n = 500;
     hitable **list = new hitable*[n+1];
-    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
-    int i = 1;
+    int i = 0;
     for(int a=-11; a < 11; a++) {
         for(int b=-11; b<11; b++) {
             float choose_mat = rand_float();
@@ -66,10 +66,14 @@ hitable *random_scene()
             }
         }
     }
-    list[i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    list[i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
-    list[i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-    return new hitable_list(list, i);
+
+    hitable** ret = new hitable*[10];
+    ret[0] = new bvh_node(list, i, 0, 1);
+    ret[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(vec3(0.5, 0.5, 0.5)));
+    ret[2] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
+    ret[3] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(vec3(0.4, 0.2, 0.1)));
+    ret[4] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+    return new hitable_list(ret, 5);
 }
 
 int main(int argc, char** argv)
@@ -82,20 +86,8 @@ int main(int argc, char** argv)
               << nx << " " << ny << "\n"
               << 255 << "\n";
 
-    // hitable* list[5];
-    // list[0] = new sphere(vec3(0, 0, -1), 0.5, new lambertian(vec3(0.8, 0.3, 0.3)));
-    // list[1] = new sphere(vec3(0, -100.5, -1), 100, new lambertian(vec3(0.8, 0.8, 0.0)));
-    // list[2] = new sphere(vec3(1, 0, -1), 0.5, new metal(vec3(0.8, 0.8, 0.8), 0.5));
-    // list[3] = new sphere(vec3(-1, 0, -1), 0.5, new dielectric(1.5));
-    // // list[4] = new sphere(vec3(-1, 0, -1), -0.45, new dielectric(1.5));
-    // hitable *world = new hitable_list(list, 4);
-
     hitable *world = random_scene();
 
-    // camera cam(vec3(0, 0, 0), vec3(0, 0, -1), vec3(0, 1, 0), 90, float(nx) / float(ny));
-    // camera cam(vec3(-1, 1, 0.5), vec3(0, 0, -1), vec3(0, 1, 0), 90, float(nx)/float(ny));
-    // vec3 lookfrom(3, 3, 2);
-    // vec3 lookat(0, 0, -1);
     vec3 lookfrom(12, 2, 3);
     vec3 lookat(0, 0.5, 0);
     float dist_to_focus = (lookfrom - lookat).length();
