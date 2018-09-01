@@ -105,7 +105,7 @@ int main(int argc, char** argv)
                 total_col += color(r, world);
             }
             total_col /= float(ns);
-            // gamma ほせい 
+            // gamma ほせい
             total_col = vec3(sqrt(total_col[0]), sqrt(total_col[1]), sqrt(total_col[2]));
 
             int ir = (int) (255 * total_col.r());

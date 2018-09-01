@@ -92,7 +92,7 @@ bvh_node::bvh_node(hitable** l, int n, float t0, float t1)
         right = new bvh_node(l + n / 2, n - n / 2, t0, t1);
     }
     aabb box_left, box_right;
-    if(!left->bounding_box(t0, t1, box_left) || !right->bounding_box(t0, t1, box_right))
+    if (!left->bounding_box(t0, t1, box_left) || !right->bounding_box(t0, t1, box_right))
         std::cerr << "No bounding box in bvh_node constructor!" << std::endl;
     box = surrounding_box(box_left, box_right);
 }
