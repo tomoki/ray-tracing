@@ -67,7 +67,6 @@ hitable *random_scene()
             }
         }
     }
-
     hitable** ret = new hitable*[10];
     ret[0] = new bvh_node(list, i, 0, 1);
     ret[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
@@ -92,7 +91,7 @@ int main(int argc, char** argv)
     vec3 lookfrom(12, 2, 3);
     vec3 lookat(0, 0.5, 0);
     float dist_to_focus = (lookfrom - lookat).length();
-    float aperture = 0;
+    float aperture = 0.1;
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     for(int j=ny-1; j>=0; j--) {
