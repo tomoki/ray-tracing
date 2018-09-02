@@ -15,7 +15,7 @@ public:
                      time0(t0),
                      time1(t1),
                      radius(r),
-                     material(mat) { }
+                     mat_ptr(mat) { }
     bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const override;
     bool bounding_box(float t0, float t1, aabb& box) const override;
 
@@ -23,7 +23,7 @@ public:
     vec3 center0, center1;
     float time0, time1;
     float radius;
-    material* material;
+    material* mat_ptr;
 };
 
 vec3 moving_sphere::center(float time) const
@@ -47,13 +47,13 @@ bool moving_sphere::hit(const ray& r, float tmin, float tmax, hit_record& rec) c
             rec.t = t1;
             rec.p = r.point_at_parameter(t1);
             rec.normal = (rec.p - center(r.time())) / radius;
-            rec.mat_ptr = material;
+            rec.mat_ptr = mat_ptr;
             return true;
         } else if(tmin < t2 && t2 < tmax) {
             rec.t = t2;
             rec.p = r.point_at_parameter(t2);
             rec.normal = (rec.p - center(r.time())) / radius;
-            rec.mat_ptr = material;
+            rec.mat_ptr = mat_ptr;
             return true;
         }
     }
@@ -64,8 +64,8 @@ bool moving_sphere::bounding_box(float t0, float t1, aabb& box) const
 {
     aabb a0, a1;
     // always return true.
-    sphere(center(t0), radius, material).bounding_box(t0, t1, a0);
-    sphere(center(t1), radius, material).bounding_box(t0, t1, a1);
+    sphere(center(t0), radius, mat_ptr).bounding_box(t0, t1, a0);
+    sphere(center(t1), radius, mat_ptr).bounding_box(t0, t1, a1);
     box = surrounding_box(a0, a1);
     return true;
 }
