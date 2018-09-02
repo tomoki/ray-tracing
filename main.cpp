@@ -10,6 +10,7 @@
 #include "sphere.h"
 
 #include <climits>
+#include <chrono>
 #include <iostream>
 
 vec3 color(const ray& r, hitable *world, int depth=0)
@@ -82,6 +83,13 @@ int main(int argc, char** argv)
     int ny = 400;
     int ns = 100;
 
+    // For show performance
+    bool show_performance = true;
+    int total_ray = nx * ny * ns;
+    int processed_ray = 0;
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+    std::chrono::system_clock::time_point tmp_time = std::chrono::system_clock::now();
+
     std::cout << "P3\n"
               << nx << " " << ny << "\n"
               << 255 << "\n";
@@ -114,6 +122,34 @@ int main(int argc, char** argv)
 
             std::cout << ir << " " << ig << " " << ib << "\n";
         }
-    }
-    return 0;
+        if (show_performance) {
+            // show process for every row
+            std::chrono::system_clock::time_point cur = std::chrono::system_clock::now();
+            std::chrono::system_clock::duration used_for_row = cur - tmp_time;
+            tmp_time = cur;
+            auto used_us_for_row = std::chrono::duration_cast<std::chrono::microseconds>(used_for_row).count();
+            float row_per_sec = 1.0 / (used_us_for_row / 1000000.0);
+            float pixel_per_sec = row_per_sec * nx;
+            float ray_per_sec = (ns * nx) / (used_us_for_row / 1000000.0);
+            processed_ray += ns * nx;
+
+            float percent = 100.0 * processed_ray / total_ray;
+            std::cerr << percent << "% (" << processed_ray << " / " << total_ray << ") ";
+            std::cerr << ray_per_sec << " ray/s" << " | " << pixel_per_sec << " pixel/s";
+            std::cerr << "\r";
+            std::cerr << "\n";
+            std::cerr << "\x1b[1A";
+        }
+     }
+
+     if (show_performance) {
+        std::chrono::system_clock::time_point end  = std::chrono::system_clock::now();
+        std::chrono::system_clock::duration dur = end - start;
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+        std::cerr << std::endl;
+        std::cerr << "Total: " << ms << " ms" << std::endl;
+        std::cerr << "Ray:   " << nx * ny * ns / (ms / 1000.0) << " ray/s" << std::endl;
+        std::cerr << "Pixel: " << nx * ny / (ms / 1000.0) << " pixel/s" << std::endl;
+     }
+     return 0;
 }
