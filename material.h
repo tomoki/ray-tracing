@@ -33,13 +33,14 @@ float schlick(float cosine, float ref_idx)
 
 class material {
 public:
-    virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) = 0;
+    virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
+    virtual vec3 emitted(float u, float v, const vec3& p) const { return vec3(0, 0, 0); }
 };
 
 class lambertian : public material {
 public:
     lambertian(texture* a) : albedo(a) {}
-    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) override
+    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override
     {
         vec3 target = rec.p + rec.normal + random_in_unit_sphere();
         scattered = ray(rec.p, target-rec.p);
@@ -53,7 +54,7 @@ public:
 class metal : public material {
 public:
     metal(const vec3& a, float f) : albedo(a), fuzz(std::min(1.0f, f)) {}
-    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) override
+    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override
     {
         vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
         scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere(), r_in.time());
@@ -67,7 +68,7 @@ public:
 class dielectric : public material {
 public:
     dielectric(float ri) : ref_idx(ri) {}
-    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) override
+    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const override
     {
         vec3 outward_normal;
         vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
@@ -101,3 +102,4 @@ public:
 
     float ref_idx;
 };
+
