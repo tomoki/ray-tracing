@@ -77,10 +77,19 @@ hitable *random_scene()
     return new hitable_list(ret, 5);
 }
 
+hitable* two_perlin_spheres()
+{
+    texture* pertext = new noise_texture();
+    hitable** list = new hitable*[2];
+    list[0] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(pertext));
+    list[1] = new sphere(vec3(0, 2, 0), 2, new lambertian(pertext));
+    return new hitable_list(list, 2);
+}
+
 int main(int argc, char** argv)
 {
-    int nx = 200;
-    int ny = 100;
+    int nx = 400;
+    int ny = 200;
     int ns = 100;
 
     // For show performance
@@ -94,12 +103,19 @@ int main(int argc, char** argv)
               << nx << " " << ny << "\n"
               << 255 << "\n";
 
-    hitable *world = random_scene();
+    // hitable *world = random_scene();
 
-    vec3 lookfrom(12, 2, 3);
-    vec3 lookat(0, 0.5, 0);
-    float dist_to_focus = (lookfrom - lookat).length();
-    float aperture = 0.1;
+    // vec3 lookfrom(12, 2, 3);
+    // vec3 lookat(0, 0.5, 0);
+    // float dist_to_focus = (lookfrom - lookat).length();
+    // float aperture = 0.1;
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+
+    hitable* world = two_perlin_spheres();
+    vec3 lookfrom(13, 2, 3);
+    vec3 lookat(0, 0, 0);
+    float dist_to_focus = 10.0;
+    float aperture = 0.0;
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     for(int j=ny-1; j>=0; j--) {
