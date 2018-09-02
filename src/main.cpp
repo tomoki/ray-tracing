@@ -79,8 +79,8 @@ hitable *random_scene()
 
 int main(int argc, char** argv)
 {
-    int nx = 800;
-    int ny = 400;
+    int nx = 200;
+    int ny = 100;
     int ns = 100;
 
     // For show performance
