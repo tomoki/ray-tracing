@@ -13,7 +13,7 @@ public:
     material* mat_ptr;
 };
 
-bool sphere:: hit(const ray& r, float tmin, float tmax, hit_record& rec) const
+bool sphere::hit(const ray& r, float tmin, float tmax, hit_record& rec) const
 {
     vec3 oc = r.origin() - center;
     float a = dot(r.direction(), r.direction());
@@ -30,12 +30,14 @@ bool sphere:: hit(const ray& r, float tmin, float tmax, hit_record& rec) const
             rec.p = r.point_at_parameter(t1);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            get_sphere_uv((rec.p - center) / radius, rec.u, rec.v);
             return true;
         } else if(tmin < t2 && t2 < tmax) {
             rec.t = t2;
             rec.p = r.point_at_parameter(t2);
             rec.normal = (rec.p - center) / radius;
             rec.mat_ptr = mat_ptr;
+            get_sphere_uv((rec.p - center) / radius, rec.u, rec.v);
             return true;
         }
     }

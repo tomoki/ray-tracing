@@ -2,6 +2,9 @@
 
 #include "vec3.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 class texture {
 public:
     virtual vec3 value(float u, float v, const vec3& p) const = 0;
@@ -127,4 +130,27 @@ public:
     }
     perlin noise;
     float scale;
+};
+
+class image_texture : public texture {
+public:
+    image_texture(unsigned char* pixels, int w, int h) : data(pixels), nx(w), ny(h) { }
+    vec3 value(float u, float v, const vec3& p) const override {
+        int i = u * nx;
+        int j = (1 - v) * ny - 0.001;
+        if (i < 0)
+            i = 0;
+        if (i > nx - 1)
+            i = nx - 1;
+        if (j < 0)
+            j = 0;
+        if (j > ny - 1)
+            j = ny - 1;
+        float r = int(data[3 * i + 3 * nx * j + 0]) / 255.0;
+        float g = int(data[3 * i + 3 * nx * j + 1]) / 255.0;
+        float b = int(data[3 * i + 3 * nx * j + 2]) / 255.0;
+        return vec3(r, g, b);
+    }
+    unsigned char* data;
+    int nx, ny;
 };

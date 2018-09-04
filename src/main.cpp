@@ -86,6 +86,14 @@ hitable* two_perlin_spheres()
     return new hitable_list(list, 2);
 }
 
+// hitable* texture_scene()
+// {
+//     int nx, ny, nn;
+//     unsigned char* tex_data = stbi_load("tex.jpg", &nx, &ny, &nn, 0);
+//     material* mat = new lambertian(new image_texture(tex_data, nx, ny));
+//     return new sphere(vec3(0, 2, 0), 2, mat);
+// }
+
 int main(int argc, char** argv)
 {
     int nx = 400;
@@ -112,6 +120,7 @@ int main(int argc, char** argv)
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     hitable* world = two_perlin_spheres();
+    // hitable* world = texture_scene();
     vec3 lookfrom(13, 2, 3);
     vec3 lookat(0, 0, 0);
     float dist_to_focus = 10.0;
