@@ -169,17 +169,20 @@ int main(int argc, char** argv)
         threads.push_back(std::thread([number_of_threads, &done_task_per_threads, &tasks_per_threads]() {
             bool done = false;
             while (!done) {
-                bool still_in_progress = true;
+                bool still_in_progress = false;
                 for (int i = 0; i < number_of_threads; i++) {
-                    still_in_progress &= done_task_per_threads[i] != tasks_per_threads[i];
+                    still_in_progress |= done_task_per_threads[i] != tasks_per_threads[i];
                     std::cerr << i << " " << done_task_per_threads[i] << "/" << tasks_per_threads[i] << std::endl;
                 }
                 if (!still_in_progress)
                     done = true;
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                for (int i = 0; i < number_of_threads; i++) {
-                    std::cerr << "\x1b[1A";
+                else {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    for (int i = 0; i < number_of_threads; i++) {
+                        std::cerr << "\x1b[1A";
+                    }
                 }
+
             }
         }));
     for (auto& t : threads)
