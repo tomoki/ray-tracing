@@ -12,6 +12,8 @@
 
 #include <climits>
 #include <chrono>
+#include <thread>
+#include <queue>
 #include <iostream>
 
 vec3 color(const ray& r, hitable *world, int depth=0)
@@ -92,9 +94,9 @@ hitable* two_perlin_spheres()
 
 int main(int argc, char** argv)
 {
-    int nx = 800;
-    int ny = 400;
-    int ns = 1000;
+    int nx = 3840;
+    int ny = 2160;
+    int ns = 100;
 
     // For show performance
     bool show_performance = true;
@@ -122,45 +124,76 @@ int main(int argc, char** argv)
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
-    for(int j=ny-1; j>=0; j--) {
-        for(int i=0; i<nx; i++) {
-            vec3 total_col(0, 0, 0);
-            for(int k=0; k<ns; k++) {
-                float u = 1.0 * (i + rand_float()-0.5) / nx;
-                float v = 1.0 * (j + rand_float()-0.5) / ny;
-                ray r = cam.get_ray(u, v);
-                vec3 p = r.point_at_parameter(2.0); // ????
-                total_col += color(r, world);
+    std::vector<std::vector<vec3>> colors(ny, std::vector<vec3>(nx));
+
+    std::vector<std::thread> threads;
+    int number_of_threads = std::thread::hardware_concurrency();
+    std::vector<std::queue<int>> y_per_threads(number_of_threads);
+    std::vector<int> done_task_per_threads(number_of_threads);
+    std::vector<int> tasks_per_threads(number_of_threads);
+    {
+        int k = 0;
+        for (int j = ny - 1; j >= 0; j--) {
+            y_per_threads[k].push(j);
+            k = (k + 1) % number_of_threads;
+        }
+        for (int i = 0; i < tasks_per_threads.size(); i++) {
+            tasks_per_threads[i] = y_per_threads[i].size();
+        }
+        for (int k = 0; k < y_per_threads.size(); k++) {
+            threads.push_back(std::thread([k, &y_per_threads, &done_task_per_threads, &colors, nx, ny, ns, cam, world]() {
+                auto& q = y_per_threads[k];
+                while(!q.empty()) {
+                    int j = q.front();
+                    q.pop();
+                    for (int i = 0; i < nx; i++) {
+                        vec3 total_col(0, 0, 0);
+                        for (int k = 0; k < ns; k++) {
+                            float u = 1.0 * (i + rand_float() - 0.5) / nx;
+                            float v = 1.0 * (j + rand_float() - 0.5) / ny;
+                            ray r = cam.get_ray(u, v);
+                            vec3 p = r.point_at_parameter(2.0); // ????
+                            total_col += color(r, world);
+                        }
+                        total_col /= float(ns);
+                        // gamma ほせい
+                        total_col = vec3(sqrt(total_col[0]), sqrt(total_col[1]), sqrt(total_col[2]));
+                        colors[j][i] = total_col;
+                    }
+                    done_task_per_threads[k]++;
+                }
+            }));
+        }
+    }
+    if (show_performance)
+        threads.push_back(std::thread([number_of_threads, &done_task_per_threads, &tasks_per_threads]() {
+            bool done = false;
+            while (!done) {
+                bool still_in_progress = true;
+                for (int i = 0; i < number_of_threads; i++) {
+                    still_in_progress &= done_task_per_threads[i] != tasks_per_threads[i];
+                    std::cerr << i << " " << done_task_per_threads[i] << "/" << tasks_per_threads[i] << std::endl;
+                }
+                if (!still_in_progress)
+                    done = true;
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                for (int i = 0; i < number_of_threads; i++) {
+                    std::cerr << "\x1b[1A";
+                }
             }
-            total_col /= float(ns);
-            // gamma ほせい
-            total_col = vec3(sqrt(total_col[0]), sqrt(total_col[1]), sqrt(total_col[2]));
+        }));
+    for (auto& t : threads)
+        t.join();
 
-            int ir = (int) (255 * total_col.r());
-            int ig = (int) (255 * total_col.g());
-            int ib = (int) (255 * total_col.b());
-
-            std::cout << ir << " " << ig << " " << ib << "\n";
-        }
-        if (show_performance) {
-            // show process for every row
-            std::chrono::system_clock::time_point cur = std::chrono::system_clock::now();
-            std::chrono::system_clock::duration used_for_row = cur - tmp_time;
-            tmp_time = cur;
-            auto used_us_for_row = std::chrono::duration_cast<std::chrono::microseconds>(used_for_row).count();
-            float row_per_sec = 1.0 / (used_us_for_row / 1000000.0);
-            float pixel_per_sec = row_per_sec * nx;
-            float ray_per_sec = (ns * nx) / (used_us_for_row / 1000000.0);
-            processed_ray += ns * nx;
-
-            float percent = 100.0 * processed_ray / total_ray;
-            std::cerr << percent << "% (" << processed_ray << " / " << total_ray << ") ";
-            std::cerr << ray_per_sec << " ray/s" << " | " << pixel_per_sec << " pixel/s";
-            std::cerr << "\r";
-            std::cerr << "\n";
-            std::cerr << "\x1b[1A";
-        }
-     }
+    for (int j = ny - 1; j >= 0; j--) {
+       for (int i = 0; i < nx; i++) {
+           vec3 total_col = colors[j][i];
+           int ir = (int)(255 * total_col.r());
+           int ig = (int)(255 * total_col.g());
+           int ib = (int)(255 * total_col.b());
+           std::cout << ir << " " << ig << " " << ib << "\n";
+       }
+    }
 
      if (show_performance) {
         std::chrono::system_clock::time_point end  = std::chrono::system_clock::now();
