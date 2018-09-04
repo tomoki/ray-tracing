@@ -71,7 +71,7 @@ inline std::istream& operator>>(std::istream& is, vec3& v)
 
 inline std::ostream& operator<<(std::ostream& os, const vec3& v)
 {
-    os << v.e[0] << " " << v.e[1] << v.e[2];
+    os << v.e[0] << " " << v.e[1] << " " << v.e[2];
     return os;
 }
 
