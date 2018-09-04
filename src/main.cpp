@@ -8,6 +8,7 @@
 #include "material.h"
 #include "moving_sphere.h"
 #include "sphere.h"
+#include "rect.h"
 
 #include <climits>
 #include <chrono>
@@ -62,12 +63,14 @@ hitable *random_scene()
         }
     }
     hitable** ret = new hitable*[10];
-    ret[0] = new bvh_node(list, i, 0, 1);
-    ret[1] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
-    ret[2] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
-    ret[3] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
-    ret[4] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-    return new hitable_list(ret, 5);
+    int ret_i = 0;
+    ret[ret_i++] = new bvh_node(list, i, 0, 1);
+    ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
+    ret[ret_i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
+    ret[ret_i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
+    ret[ret_i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+    ret[ret_i++] = new xy_rect(-2, 1, 2, 3, -3, new diffuse_light(new constant_texture(vec3(6.0, 6.0, 6.0))));
+    return new hitable_list(ret, ret_i);
 }
 
 hitable* two_perlin_spheres()
@@ -89,9 +92,9 @@ hitable* two_perlin_spheres()
 
 int main(int argc, char** argv)
 {
-    int nx = 400;
-    int ny = 200;
-    int ns = 100;
+    int nx = 800;
+    int ny = 400;
+    int ns = 1000;
 
     // For show performance
     bool show_performance = true;
