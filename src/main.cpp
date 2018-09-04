@@ -19,20 +19,13 @@ vec3 color(const ray& r, hitable *world, int depth=0)
     if (world->hit(r, 0.001, 1e9, rec)) {
         ray scattered;
         vec3 attenuation;
-        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered)) {
-            return attenuation * color(scattered, world, depth+1);
-        } else {
-            return vec3(0, 0, 0);
-        }
-    }
-
-    {
-        // -1 ~ 1
-        vec3 unit_direction = unit_vector(r.direction());
-        // 0 - 1
-        float t = 0.5 * (unit_direction.y() + 1.0);
-        return (1.0-t) * vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
-    }
+        vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
+        if (depth < 50 && rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+            return emitted + attenuation * color(scattered, world, depth+1);
+        else
+            return emitted;
+    } else
+        return vec3(0, 0, 0);
 }
 
 hitable *random_scene()
@@ -111,21 +104,20 @@ int main(int argc, char** argv)
               << nx << " " << ny << "\n"
               << 255 << "\n";
 
-    // hitable *world = random_scene();
-
-    // vec3 lookfrom(12, 2, 3);
-    // vec3 lookat(0, 0.5, 0);
-    // float dist_to_focus = (lookfrom - lookat).length();
-    // float aperture = 0.1;
-    // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
-
-    hitable* world = two_perlin_spheres();
-    // hitable* world = texture_scene();
-    vec3 lookfrom(13, 2, 3);
-    vec3 lookat(0, 0, 0);
-    float dist_to_focus = 10.0;
-    float aperture = 0.0;
+    hitable *world = random_scene();
+    vec3 lookfrom(12, 2, 3);
+    vec3 lookat(0, 0.5, 0);
+    float dist_to_focus = (lookfrom - lookat).length();
+    float aperture = 0.1;
     camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+
+    // hitable* world = two_perlin_spheres();
+    // // hitable* world = texture_scene();
+    // vec3 lookfrom(13, 2, 3);
+    // vec3 lookat(0, 0, 0);
+    // float dist_to_focus = 10.0;
+    // float aperture = 0.0;
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     for(int j=ny-1; j>=0; j--) {
         for(int i=0; i<nx; i++) {
