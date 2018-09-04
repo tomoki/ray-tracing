@@ -94,8 +94,8 @@ hitable* two_perlin_spheres()
 
 int main(int argc, char** argv)
 {
-    int nx = 3840;
-    int ny = 2160;
+    int nx = 400;
+    int ny = 200;
     int ns = 100;
 
     // For show performance
@@ -129,19 +129,19 @@ int main(int argc, char** argv)
     std::vector<std::thread> threads;
     int number_of_threads = std::thread::hardware_concurrency();
     std::vector<std::queue<int>> y_per_threads(number_of_threads);
-    std::vector<int> done_task_per_threads(number_of_threads);
-    std::vector<int> tasks_per_threads(number_of_threads);
+    std::vector<int64_t> done_pixels_per_threads(number_of_threads);
+    std::vector<int64_t> pixels_per_threads(number_of_threads);
     {
         int k = 0;
         for (int j = ny - 1; j >= 0; j--) {
             y_per_threads[k].push(j);
             k = (k + 1) % number_of_threads;
         }
-        for (int i = 0; i < tasks_per_threads.size(); i++) {
-            tasks_per_threads[i] = y_per_threads[i].size();
+        for (int i = 0; i < pixels_per_threads.size(); i++) {
+            pixels_per_threads[i] = y_per_threads[i].size() * nx;
         }
         for (int k = 0; k < y_per_threads.size(); k++) {
-            threads.push_back(std::thread([k, &y_per_threads, &done_task_per_threads, &colors, nx, ny, ns, cam, world]() {
+            threads.push_back(std::thread([k, &y_per_threads, &done_pixels_per_threads, &colors, nx, ny, ns, cam, world]() {
                 auto& q = y_per_threads[k];
                 while(!q.empty()) {
                     int j = q.front();
@@ -159,26 +159,39 @@ int main(int argc, char** argv)
                         // gamma ほせい
                         total_col = vec3(sqrt(total_col[0]), sqrt(total_col[1]), sqrt(total_col[2]));
                         colors[j][i] = total_col;
+                        done_pixels_per_threads[k]++;
                     }
-                    done_task_per_threads[k]++;
                 }
             }));
         }
     }
     if (show_performance)
-        threads.push_back(std::thread([number_of_threads, &done_task_per_threads, &tasks_per_threads]() {
+        threads.push_back(std::thread([ns, number_of_threads, &done_pixels_per_threads, &pixels_per_threads]() {
             bool done = false;
+            int64_t done_pixels = 0;
+            int64_t total_pixels = 0;
+            for(int p : pixels_per_threads)
+                total_pixels += p;
+
             while (!done) {
                 bool still_in_progress = false;
+                int64_t previous_done_pixels = done_pixels;
+                done_pixels = 0;
+                // Need to clear rest of line by "\033[0K" as we overwrite lines
                 for (int i = 0; i < number_of_threads; i++) {
-                    still_in_progress |= done_task_per_threads[i] != tasks_per_threads[i];
-                    std::cerr << i << " " << done_task_per_threads[i] << "/" << tasks_per_threads[i] << std::endl;
+                    still_in_progress |= done_pixels_per_threads[i] != pixels_per_threads[i];
+                    done_pixels += done_pixels_per_threads[i];
+                    std::cerr << i << " " << done_pixels_per_threads[i] << "/" << pixels_per_threads[i] << "\033[0K" << std::endl;
                 }
+                float progress_in_percent = 100.0 * done_pixels / total_pixels;
+                std::cerr << "Progress: " << progress_in_percent << "%" << "\033[0K" << std::endl;
+                std::cerr << "Rays: " << ns * (done_pixels-previous_done_pixels) << " rays/s" << "\033[0K" << std::endl;
+                std::cerr << "Pixels: " <<  (done_pixels-previous_done_pixels) << " pixels/s" << "\033[0K" << std::endl;
                 if (!still_in_progress)
                     done = true;
                 else {
                     std::this_thread::sleep_for(std::chrono::seconds(1));
-                    for (int i = 0; i < number_of_threads; i++) {
+                    for (int i = 0; i < number_of_threads+3; i++) {
                         std::cerr << "\x1b[1A";
                     }
                 }
