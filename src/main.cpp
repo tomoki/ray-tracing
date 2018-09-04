@@ -100,10 +100,7 @@ int main(int argc, char** argv)
 
     // For show performance
     bool show_performance = true;
-    int total_ray = nx * ny * ns;
-    int processed_ray = 0;
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-    std::chrono::system_clock::time_point tmp_time = std::chrono::system_clock::now();
 
     std::cout << "P3\n"
               << nx << " " << ny << "\n"
@@ -152,7 +149,6 @@ int main(int argc, char** argv)
                             float u = 1.0 * (i + rand_float() - 0.5) / nx;
                             float v = 1.0 * (j + rand_float() - 0.5) / ny;
                             ray r = cam.get_ray(u, v);
-                            vec3 p = r.point_at_parameter(2.0); // ????
                             total_col += color(r, world);
                         }
                         total_col /= float(ns);
@@ -216,9 +212,10 @@ int main(int argc, char** argv)
         std::chrono::system_clock::duration dur = end - start;
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
         std::cerr << std::endl;
+        std::cerr << std::fixed;
         std::cerr << "Total: " << ms << " ms" << std::endl;
-        std::cerr << "Ray:   " << nx * ny * ns / (ms / 1000.0) << " ray/s" << std::endl;
-        std::cerr << "Pixel: " << nx * ny / (ms / 1000.0) << " pixel/s" << std::endl;
+        std::cerr << "Ray:   " << (1/(ms/1000.0)) * nx * ny * ns << " ray/s" << std::endl;
+        std::cerr << "Pixel: " << (1/(ms/1000.0)) * nx * ny << " pixel/s" << std::endl;
      }
      return 0;
 }
