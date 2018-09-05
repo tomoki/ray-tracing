@@ -71,7 +71,7 @@ hitable *random_scene()
     ret[ret_i++] = new sphere(vec3(0, 1, 0), 1.0, new dielectric(1.5));
     ret[ret_i++] = new sphere(vec3(-4, 1, 0), 1.0, new lambertian(new constant_texture(vec3(0.4, 0.2, 0.1))));
     ret[ret_i++] = new sphere(vec3(4, 1, 0), 1.0, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-    ret[ret_i++] = new xy_rect(-2, 1, 2, 3, -3, new diffuse_light(new constant_texture(vec3(6.0, 6.0, 6.0))));
+    ret[ret_i++] = new xy_rect(-2, 2, 1, 3, -3, new diffuse_light(new constant_texture(vec3(6.0, 6.0, 6.0))));
     return new hitable_list(ret, ret_i);
 }
 
@@ -84,6 +84,23 @@ hitable* two_perlin_spheres()
     return new hitable_list(list, 2);
 }
 
+hitable* cornell_box()
+{
+    hitable **list = new hitable*[6];
+    int i = 0;
+    material* red   = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
+    material* white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
+    material* green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+    material* light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
+    list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
+    list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
+    list[i++] = new xz_rect(213, 343, 228, 332, 554, light);
+    list[i++] = new flip_normals(new xz_rect(0, 555, 0, 555, 555, white));
+    list[i++] = new xz_rect(0, 555, 0, 555, 0, white);
+    list[i++] = new flip_normals(new xy_rect(0, 555, 0, 555, 555, white));
+    return new hitable_list(list, i);
+}
+
 // hitable* texture_scene()
 // {
 //     int nx, ny, nn;
@@ -94,9 +111,9 @@ hitable* two_perlin_spheres()
 
 int main(int argc, char** argv)
 {
-    int nx = 400;
+    int nx = 200;
     int ny = 200;
-    int ns = 100;
+    int ns = 50;
 
     // For show performance
     bool show_performance = true;
@@ -106,12 +123,12 @@ int main(int argc, char** argv)
               << nx << " " << ny << "\n"
               << 255 << "\n";
 
-    hitable *world = random_scene();
-    vec3 lookfrom(12, 2, 3);
-    vec3 lookat(0, 0.5, 0);
-    float dist_to_focus = (lookfrom - lookat).length();
-    float aperture = 0.1;
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+    // hitable *world = random_scene();
+    // vec3 lookfrom(12, 2, 3);
+    // vec3 lookat(0, 0.5, 0);
+    // float dist_to_focus = (lookfrom - lookat).length();
+    // float aperture = 0.1;
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     // hitable* world = two_perlin_spheres();
     // // hitable* world = texture_scene();
@@ -120,6 +137,14 @@ int main(int argc, char** argv)
     // float dist_to_focus = 10.0;
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+
+    hitable* world = cornell_box();
+    vec3 lookfrom(278, 278, -800);
+    vec3 lookat(278, 278, 0);
+    float dist_to_focus = 10.0;
+    float aperture = 0.0;
+    float vfov = 40.0;
+    camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     std::vector<std::vector<vec3>> colors(ny, std::vector<vec3>(nx));
 
