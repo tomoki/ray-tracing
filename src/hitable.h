@@ -76,7 +76,7 @@ public:
 
         if (hasbox) {
             vec3 minv(std::numeric_limits<float>::max() , std::numeric_limits<float>::max() , std::numeric_limits<float>::max());
-            vec3 maxv(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+            vec3 maxv(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 
             for(int i = 0; i < 2; i++) {
                 for(int j = 0; j < 2; j++) {
