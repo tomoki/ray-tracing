@@ -129,9 +129,16 @@ inline vec3 cross(const vec3& left, const vec3& right)
 {
     return vec3(
         left[1] * right[2] - left[2] * right[1],
-        - (left[0] * right[2] - left[2] * right[0]),
-        left[0] * right[1] - left[1] * right[0]
-    );
+        left[2] * right[0] - left[0] * right[2],
+        left[0] * right[1] - left[1] * right[0]);
+}
+
+// returns |a||b|sin(theta)
+inline float cross_length_including_minus(const vec3& left, const vec3& right)
+{
+    // this function works only in 2 dimension.
+    assert(left[2] == 0 && right[2] == 0);
+    return left[0] * right[1] - right[0] * left[1];
 }
 
 inline vec3& vec3::operator+=(const vec3& v)
