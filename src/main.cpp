@@ -11,10 +11,12 @@
 #include "rect.h"
 #include "volume.h"
 
+#include <algorithm>
 #include <climits>
 #include <chrono>
 #include <thread>
 #include <queue>
+#include <fstream>
 #include <iostream>
 
 vec3 color(const ray& r, hitable *world, int depth=0)
@@ -92,6 +94,9 @@ hitable* cornell_box()
     material* red   = new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05)));
     material* white = new lambertian(new constant_texture(vec3(0.73, 0.73, 0.73)));
     material* green = new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15)));
+    material* yellow = new lambertian(new constant_texture(vec3(0.8, 0.8, 0.15)));
+
+    material* mirror = new metal(vec3(1.0, 0.8, 0.8), 0.0);
     material* light = new diffuse_light(new constant_texture(vec3(15, 15, 15)));
     list[i++] = new flip_normals(new yz_rect(0, 555, 0, 555, 555, green));
     list[i++] = new yz_rect(0, 555, 0, 555, 0, red);
@@ -103,23 +108,74 @@ hitable* cornell_box()
     // list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
     // list[i++] = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white), 15), vec3(265, 0, 295));
 
-    hitable* a = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
-    list[i++] = new constant_medium(a, 0.01, new constant_texture(vec3(1.0, 1.0, 1.0)));
-    hitable* b = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white), 15), vec3(265, 0, 295));
-    list[i++] = new constant_medium(b, 0.01, new constant_texture(vec3(0.0, 0.0, 0.0)));
+    // hitable* a = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 165, 165), white), -18), vec3(130, 0, 65));
+    // list[i++] = new constant_medium(a, 0.01, new constant_texture(vec3(1.0, 1.0, 1.0)));
+    // hitable* b = new translate(new rotate_y(new box(vec3(0, 0, 0), vec3(165, 330, 165), white), 15), vec3(265, 0, 295));
+    // list[i++] = new constant_medium(b, 0.01, new constant_texture(vec3(0.0, 0.0, 0.0)));
+    // list[i++] = new triangle(vec3(255, 400, 255.0), vec3(410, 20.0, 255), vec3(50, 20.0, 255.0), false, mirror);
+    // list[i++] = new xz_rect(0, 555, 0, 555, 10, mirror);
+    list[i++] = new triangle(vec3(555, 10.0, 0), vec3(0, 10, 0), vec3(555, 555.0, 555.0), false, mirror);
+    // list[i++] = new xz_triangle(0, 555, 555, 0, 0, 555, 10, mirror);
 
     return new hitable_list(list, i);
 }
 
 hitable* triangle_test()
 {
-    hitable** ret = new hitable*[10];
+    hitable** ret = new hitable*[30];
     int ret_i = 0;
     ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
     ret[ret_i++] = new xz_rect(-10000, 10000, -10000, 10000, 1000, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
-    ret[ret_i++] = new xy_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15))));
-    ret[ret_i++] = new xz_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
-    ret[ret_i++] = new yz_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.7, 0.7, 0.05))));
+    // ret[ret_i++] = new xy_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15))));
+    // ret[ret_i++] = new xz_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+    // ret[ret_i++] = new triangle(vec3(0.0, 0.0, 0.4), vec3(2.0, 0.0, 0.2), vec3(1.0, 0.0, 2.0), new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+    //  for (int i = 0; i < 10; i++) {
+    //     float theta = 2*3.141592/10 * i;
+
+    //     vec3 a(cos(theta), 1, sin(theta));
+    //     vec3 b(2*cos(theta), 0, 2*sin(theta));
+    //     vec3 c(2*cos(theta), 2, 2*sin(theta));
+    //     vec3 color(rand_float(), rand_float(), rand_float());
+    //     ret[ret_i++] = new triangle(a, b, c,true, new lambertian(new constant_texture(color)));
+    // }
+
+    //  for (int i = 0; i < 10; i++) {
+    //     float theta = 2*3.141592/10 * i;
+
+    //     vec3 a(cos(theta), 1, sin(theta));
+    //     vec3 b(2*cos(theta), 0, 2*sin(theta));
+    //     vec3 c(2*cos(theta), 2, 2*sin(theta));
+    //     vec3 color(rand_float(), rand_float(), rand_float());
+    //     ret[ret_i++] = new triangle(c, b, a, true, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+    // }
+
+
+      // for (int i = 3; i < 10; i++)
+        // ret[ret_i++] = new triangle(vec3(0.0, 0.3*i, 0.4), vec3(1.0, 0.3*i, 2.0), vec3(2.0, 0.3*i, 0.2), true, new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+    // for (int i = 0; i < 10; i++)
+        // ret[ret_i++] = new triangle(vec3(rand_float()*2-1, rand_float(), rand_float()),vec3(rand_float(), rand_float(), rand_float()), vec3(rand_float(), rand_float(), rand_float()), true, new lambertian(new constant_texture(vec3(rand_float(), 0.05, 0.05))));
+
+        // ret[ret_i++] = new triangle(vec3(0.0, i, 0.4), vec3(2.0, i, 0.2), vec3(1.0, i, 2.0), new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+
+    // ret[ret_i++] = new triangle(vec3(0.0, 0.4, 2.0), vec3(2.0, 0.2, 2.0), vec3(1.0, 2.0, 2.0), true, new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15))));
+    // ret[ret_i++] = new triangle(vec3(0.0, 0.0, 0.4), vec3(0.0, 2.0, 0.2), vec3(0.0, 1.0, 2.0), new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+    // ret[ret_i++] = new triangle(vec3(0.0, 0.3, 0.0), vec3(4.0, 0.3, -2.0), vec3(4.0, 0.3, 2.0), new lambertian(new constant_texture(vec3(0.7, 0.7, 0.05))));
+
+
+    // ret[ret_i++] = new triangle(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0), new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
+    // ret[ret_i++] = new triangle(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 1.0, 1.0), true, new lambertian(new constant_texture(vec3(0.7, 0.1, 0.1))));
+    // ret[ret_i++] = new sphere(vec3(0, 0, -1000), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
+
+    // ret[ret_i++] = new yz_rect(3.0, 6.0, 0.0, 6.0, 3.0, new metal(vec3(1.0, 1.0, 1.0), 1.0));
+    // ret[ret_i++] = new triangle(vec3(3.0, 3.0, 0.0), vec3(3.0, 3.0, 3.0), vec3(3.0, 0.0, 0.0), true, new metal(vec3(1.0, 1.0, 1.0), 1.0));
+
+    // ret[ret_i++] = new triangle(vec3(0.1, 0.0, 0.2), vec3(0.0, 1.0, 0.2), vec3(0.5, 1.414/2, 0.2), new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
+    // ret[ret_i++] = new triangle(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0), new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
+    // ret[ret_i++] = new triangle(vec3(0.0, 0.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.5, 0.0, 0.7), new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
+
+    // ret[ret_i++] = new xy_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.12, 0.45, 0.15))));
+    // ret[ret_i++] = new xz_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.65, 0.05, 0.05))));
+    // ret[ret_i++] = new yz_triangle(0.0, 2.0, 1.0, 0.4, 0.2, 2.0, 0, new lambertian(new constant_texture(vec3(0.7, 0.7, 0.05))));
     return new hitable_list(ret, ret_i);
 }
 
@@ -138,13 +194,15 @@ int main(int argc, char** argv)
     int ny = 300;
     int ns = 100;
 
+    if (argc != 2) {
+        std::cerr << "Usage: ./executable hoge.ppm" << std::endl;
+        return 1;
+    }
+    std::string ppm_path(argv[1]);
+
     // For show performance
     bool show_performance = true;
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-
-    std::cout << "P3\n"
-              << nx << " " << ny << "\n"
-              << 255 << "\n";
 
     // hitable *world = random_scene();
     // vec3 lookfrom(12, 2, 3);
@@ -161,20 +219,20 @@ int main(int argc, char** argv)
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
-    // hitable* world = cornell_box();
-    // vec3 lookfrom(278, 278, -800);
-    // vec3 lookat(278, 278, 0);
-    // float dist_to_focus = 10.0;
-    // float aperture = 0.0;
-    // float vfov = 40.0;
-    // camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
-
-    hitable* world = triangle_test();
-    vec3 lookfrom(12, 2, 3);
-    vec3 lookat(0, 0.5, 0);
-    float dist_to_focus = (lookfrom - lookat).length();
+    hitable* world = cornell_box();
+    vec3 lookfrom(278, 278, -800);
+    vec3 lookat(278, 278, 0);
+    float dist_to_focus = 10.0;
     float aperture = 0.0;
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), 40, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+    float vfov = 40.0;
+    camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+
+    // hitable* world = triangle_test();
+    // vec3 lookfrom(12, 2, 3);
+    // vec3 lookat(0, 0.5, 0);
+    // float dist_to_focus = (lookfrom - lookat).length();
+    // float aperture = 0.0;
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), 40, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     std::vector<std::vector<vec3>> colors(ny, std::vector<vec3>(nx));
 
@@ -249,18 +307,37 @@ int main(int argc, char** argv)
 
             }
         }));
+
+    // output thread
+    threads.push_back(std::thread([&colors, ppm_path, number_of_threads, &done_pixels_per_threads, &pixels_per_threads]() {
+        while (true) {
+            bool done = true;
+            for (int i = 0; i < number_of_threads; i++){
+                done &= pixels_per_threads[i] == done_pixels_per_threads[i];
+            }
+            std::fstream fs(ppm_path, std::ios::out | std::ios::trunc);
+            int ny = colors.size();
+            int nx = colors[0].size();
+            fs << "P3" << std::endl
+               << nx << " " << ny << std::endl
+               << 255 << std::endl;
+            for (int j = ny - 1; j >= 0; j--) {
+                for (int i = 0; i < nx; i++) {
+                    vec3 total_col = colors[j][i];
+                    int ir = (int)(255 * total_col.r());
+                    int ig = (int)(255 * total_col.g());
+                    int ib = (int)(255 * total_col.b());
+                    fs << ir << " " << ig << " " << ib << "\n";
+                }
+            }
+            fs.close();
+            if (done)
+                break;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }));
     for (auto& t : threads)
         t.join();
-
-    for (int j = ny - 1; j >= 0; j--) {
-       for (int i = 0; i < nx; i++) {
-           vec3 total_col = colors[j][i];
-           int ir = (int)(255 * total_col.r());
-           int ig = (int)(255 * total_col.g());
-           int ib = (int)(255 * total_col.b());
-           std::cout << ir << " " << ig << " " << ib << "\n";
-       }
-    }
 
      if (show_performance) {
         std::chrono::system_clock::time_point end  = std::chrono::system_clock::now();

@@ -149,6 +149,83 @@ bool is_inside_of_triangle(float tx, float ty, float x0, float y0, float x1, flo
     return true;
 }
 
+// calculated by Tomas Moller's algrithm.
+// See Fast, Minimum Storage Ray/Triangle Intersection
+class triangle : public hitable {
+public:
+    triangle(vec3 v0, vec3 v1, vec3 v2, bool two_sided_, material* mat) : vert0(v0), vert1(v1), vert2(v2), two_sided(two_sided_), mat_ptr(mat) { }
+
+    bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
+        const vec3 edge1 = vert1 - vert0;
+        const vec3 edge2 = vert2 - vert0;
+        const vec3 pvec = cross(r.direction(), edge2);
+        const float det = dot(edge1, pvec);
+        float inv_det = 1.0 / det;
+        const float EPSILON = 1e-6;
+        const vec3 tvec = r.origin() - vert0;
+        // backfacing
+        if (!two_sided) {
+            if (det < EPSILON)
+                return false;
+
+            rec.u = dot(tvec, pvec);
+            if (rec.u < 0.0 || rec.u > det)
+                return false;
+
+            vec3 qvec = cross(tvec, edge1);
+
+            rec.v = dot(r.direction(), qvec);
+            if (rec.v < 0.0 || rec.u + rec.v > det)
+                return false;
+
+            // std::cerr << inv_det << std::endl;
+            rec.t = dot(edge2, qvec);
+            rec.t *= inv_det;
+            rec.u *= inv_det;
+            rec.v *= inv_det;
+            rec.mat_ptr = mat_ptr;
+            rec.p = r.point_at_parameter(rec.t);
+            rec.normal = unit_vector(cross(edge1, edge2));
+            if (rec.t < t_min || t_max < rec.t)
+                return false;
+
+            return true;
+        } else {
+            // two-sided
+            if (det > -EPSILON && det < EPSILON)
+                return false;
+            rec.u = dot(tvec, pvec) * inv_det;
+            if (rec.u < 0.0 || rec.u > 1.0)
+                return false;
+            vec3 qvec = cross(tvec, edge1);
+            rec.v = dot(r.direction(), qvec) * inv_det;
+            if (rec.v < 0.0 || rec.u + rec.v > 1.0)
+                return false;
+            rec.t = dot(edge2, qvec) * inv_det;
+            rec.p = r.point_at_parameter(rec.t);
+            rec.mat_ptr = mat_ptr;
+            rec.normal = unit_vector(cross(edge1, edge2));
+            if (rec.t < t_min || t_max < rec.t)
+                return false;
+            return true;
+        }
+    }
+
+    bool bounding_box(float t0, float t1, aabb& box) const {
+        vec3 mins(std::min({ vert0.x(), vert1.x(), vert2.x() }),
+                  std::min({ vert0.y(), vert1.y(), vert2.y() }),
+                  std::min({ vert0.z(), vert1.z(), vert2.z() }));
+        vec3 maxs(std::max({ vert0.x(), vert1.x(), vert2.x() }),
+                  std::max({ vert0.y(), vert1.y(), vert2.y() }),
+                  std::max({ vert0.z(), vert1.z(), vert2.z() }));
+        box = aabb(mins, maxs);
+        return true;
+    }
+    vec3 vert0, vert1, vert2;
+    bool two_sided;
+    material* mat_ptr;
+};
+
 class xy_triangle : public hitable {
 public:
     xy_triangle(float _x0, float _x1, float _x2, float _y0, float _y1, float _y2, float _z, material* mat)
