@@ -10,6 +10,7 @@
 #include "sphere.h"
 #include "rect.h"
 #include "volume.h"
+#include "obj_loader.h"
 
 #include <algorithm>
 #include <climits>
@@ -139,15 +140,15 @@ hitable* triangle_test()
     //     ret[ret_i++] = new triangle(a, b, c,true, new lambertian(new constant_texture(color)));
     // }
 
-    //  for (int i = 0; i < 10; i++) {
-    //     float theta = 2*3.141592/10 * i;
+     for (int i = 0; i < 10; i++) {
+        float theta = 2*3.141592/10 * i;
 
-    //     vec3 a(cos(theta), 1, sin(theta));
-    //     vec3 b(2*cos(theta), 0, 2*sin(theta));
-    //     vec3 c(2*cos(theta), 2, 2*sin(theta));
-    //     vec3 color(rand_float(), rand_float(), rand_float());
-    //     ret[ret_i++] = new triangle(c, b, a, true, new metal(vec3(0.7, 0.6, 0.5), 0.0));
-    // }
+        vec3 a(cos(theta), 1, sin(theta));
+        vec3 b(2*cos(theta), 0, 2*sin(theta));
+        vec3 c(2*cos(theta), 2, 2*sin(theta));
+        vec3 color(rand_float(), rand_float(), rand_float());
+        ret[ret_i++] = new triangle(c, b, a, true, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+    }
 
 
       // for (int i = 3; i < 10; i++)
@@ -180,6 +181,26 @@ hitable* triangle_test()
 }
 
 
+hitable* model_test(model m)
+{
+    hitable** ret = new hitable*[30];
+    int ret_i = 0;
+    ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
+    ret[ret_i++] = new xz_rect(-10000, 10000, -10000, 10000, 1000, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
+
+    hitable** ms = new hitable*[m.faces.size()];
+    int ms_i = 0;
+    for (face f : m.faces) {
+        vec3 a = m.vertices[f.vertices[0]];
+        vec3 b = m.vertices[f.vertices[1]];
+        vec3 c = m.vertices[f.vertices[2]];
+        ms[ms_i++] = new triangle(a, b, c, false, new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
+        // ms[ms_i++] = new triangle(a, b, c, false, new metal(vec3(1.0, 0.8, 0.8), 0.0));
+    }
+    ret[ret_i++] = new bvh_node(ms, ms_i, 0, 1);
+    return new hitable_list(ret, ret_i);
+}
+
 // hitable* texture_scene()
 // {
 //     int nx, ny, nn;
@@ -190,6 +211,22 @@ hitable* triangle_test()
 
 int main(int argc, char** argv)
 {
+
+    // model model;
+    // load_obj("box.obj", model);
+
+    // std::cerr << "Load information " << std::endl;
+    // for (int i = 0; i < model.vertices.size(); i++) {
+    //     std::cerr << "v " << model.vertices[i][0] << " " << model.vertices[i][1] << " " << model.vertices[i][2] << std::endl;
+    // }
+    // for (int i = 0; i < model.normals.size(); i++) {
+    //     std::cerr << "vn " << model.normals[i][0] << " " << model.normals[i][1] << " " << model.normals[i][2] << std::endl;
+    // }
+    // for (int i = 0; i < model.faces.size(); i++) {
+    //     std::cerr << "f " << model.faces[i].vertices[0] << " " << model.faces[i].vertices[1] << " " << model.faces[i].vertices[2] << std::endl;
+    // }
+    // return 0;
+
     int nx = 300;
     int ny = 300;
     int ns = 100;
@@ -219,13 +256,13 @@ int main(int argc, char** argv)
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
-    hitable* world = cornell_box();
-    vec3 lookfrom(278, 278, -800);
-    vec3 lookat(278, 278, 0);
-    float dist_to_focus = 10.0;
-    float aperture = 0.0;
-    float vfov = 40.0;
-    camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+    // hitable* world = cornell_box();
+    // vec3 lookfrom(278, 278, -800);
+    // vec3 lookat(278, 278, 0);
+    // float dist_to_focus = 10.0;
+    // float aperture = 0.0;
+    // float vfov = 40.0;
+    // camera cam(lookfrom, lookat, vec3(0, 1, 0), vfov, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     // hitable* world = triangle_test();
     // vec3 lookfrom(12, 2, 3);
@@ -233,6 +270,18 @@ int main(int argc, char** argv)
     // float dist_to_focus = (lookfrom - lookat).length();
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 40, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
+
+    model m;
+    if (!load_obj("robo.obj", m)) {
+        std::cerr << "Faild to load model" << std::endl;
+        return 1;
+    }
+    hitable* world = model_test(m);
+    vec3 lookfrom(12, 2, 3);
+    vec3 lookat(0, 0.5, 0);
+    float dist_to_focus = (lookfrom - lookat).length();
+    float aperture = 0.0;
+    camera cam(lookfrom, lookat, vec3(0, 1, 0), 40, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
     std::vector<std::vector<vec3>> colors(ny, std::vector<vec3>(nx));
 
