@@ -218,6 +218,12 @@ public:
         vec3 maxs(std::max({ vert0.x(), vert1.x(), vert2.x() }),
                   std::max({ vert0.y(), vert1.y(), vert2.y() }),
                   std::max({ vert0.z(), vert1.z(), vert2.z() }));
+        // Triangle may be axis-aligned.
+        // Even in such case, boundingbox must have volume.
+        for (int i = 0; i < 3; i++) {
+            mins[i] -= 0.0001;
+            maxs[i] += 0.0001;
+        }
         box = aabb(mins, maxs);
         return true;
     }
