@@ -188,16 +188,21 @@ hitable* model_test(model m)
     ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
     ret[ret_i++] = new xz_rect(-10000, 10000, -10000, 10000, 1000, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
 
-    hitable** ms = new hitable*[m.faces.size()];
-    int ms_i = 0;
-    for (face f : m.faces) {
-        vec3 a = m.vertices[f.vertices[0]];
-        vec3 b = m.vertices[f.vertices[1]];
-        vec3 c = m.vertices[f.vertices[2]];
-        ms[ms_i++] = new triangle(a, b, c, false, new lambertian(new constant_texture(vec3(0.1, 0.1, 0.7))));
-        // ms[ms_i++] = new triangle(a, b, c, false, new metal(vec3(1.0, 0.8, 0.8), 0.0));
+    hitable** objects = new hitable*[m.objects.size()];
+    int objects_i = 0;
+    for (const auto& obj : m.objects) {
+        hitable** faces = new hitable*[obj.faces.size()];
+        int face_i = 0;
+        vec3 random_color(rand_float(), rand_float(), rand_float());
+        for (const auto& f : obj.faces) {
+            vec3 a = m.vertices[f.vertices[0]];
+            vec3 b = m.vertices[f.vertices[1]];
+            vec3 c = m.vertices[f.vertices[2]];
+            faces[face_i++] = new triangle(a, b, c, false, new lambertian(new constant_texture(random_color)));
+        }
+        objects[objects_i++] = new bvh_node(faces, face_i, 0, 1);
     }
-    ret[ret_i++] = new bvh_node(ms, ms_i, 0, 1);
+    ret[ret_i++] = new bvh_node(objects, objects_i, 0, 1);
     return new hitable_list(ret, ret_i);
 }
 

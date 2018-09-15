@@ -4,6 +4,7 @@
 #include "hitable.h"
 #include "ray.h"
 #include "texture.h"
+#include "obj_loader.h"
 
 #include <cmath>
 
@@ -125,4 +126,18 @@ public:
     }
 
     texture* albedo;
+};
+
+class custom_material : public material {
+    custom_material(obj_material* mat) : obj_mat_ptr(mat) { }
+    bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const {
+        attenuation = obj_mat_ptr->diffuse;
+        vec3 target = rec.p + rec.normal + random_in_unit_sphere();
+        scattered = ray(rec.p, target-rec.p);
+        return false;
+    }
+    vec3 emitted(float u, float v, const vec3& p) const {
+        return obj_mat_ptr->emissive_coefficient;
+    }
+    obj_material* obj_mat_ptr;
 };
