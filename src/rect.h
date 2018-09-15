@@ -149,75 +149,75 @@ bool is_inside_of_triangle(float tx, float ty, float x0, float y0, float x1, flo
     return true;
 }
 
+struct triangle_parameter {
+    vec3 v0, v1, v2;
+    vec3 vt0, vt1, vt2;
+    vec3 vn0, vn1, vn2;
+    bool has_tex_coord { false };
+    bool has_normal { false };
+};
+
 // calculated by Tomas Moller's algrithm.
 // See Fast, Minimum Storage Ray/Triangle Intersection
 class triangle : public hitable {
 public:
-    triangle(vec3 v0, vec3 v1, vec3 v2, bool two_sided_, material* mat) : vert0(v0), vert1(v1), vert2(v2), two_sided(two_sided_), mat_ptr(mat) { }
+    triangle(triangle_parameter param, material* mat) : p(param), mat_ptr(mat) { }
 
     bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const {
-        const vec3 edge1 = vert1 - vert0;
-        const vec3 edge2 = vert2 - vert0;
+        const vec3 edge1 = p.v1 - p.v0;
+        const vec3 edge2 = p.v2 - p.v0;
         const vec3 pvec = cross(r.direction(), edge2);
         const float det = dot(edge1, pvec);
         float inv_det = 1.0 / det;
         const float EPSILON = 1e-6;
-        const vec3 tvec = r.origin() - vert0;
+        const vec3 tvec = r.origin() - p.v0;
         // backfacing
-        if (!two_sided) {
-            if (det < EPSILON)
-                return false;
+        if (det < EPSILON)
+            return false;
 
-            rec.u = dot(tvec, pvec);
-            if (rec.u < 0.0 || rec.u > det)
-                return false;
+        rec.u = dot(tvec, pvec);
+        if (rec.u < 0.0 || rec.u > det)
+            return false;
 
-            vec3 qvec = cross(tvec, edge1);
+        vec3 qvec = cross(tvec, edge1);
 
-            rec.v = dot(r.direction(), qvec);
-            if (rec.v < 0.0 || rec.u + rec.v > det)
-                return false;
+        rec.v = dot(r.direction(), qvec);
+        if (rec.v < 0.0 || rec.u + rec.v > det)
+            return false;
 
-            // std::cerr << inv_det << std::endl;
-            rec.t = dot(edge2, qvec);
-            rec.t *= inv_det;
-            rec.u *= inv_det;
-            rec.v *= inv_det;
-            rec.mat_ptr = mat_ptr;
-            rec.p = r.point_at_parameter(rec.t);
-            rec.normal = unit_vector(cross(edge1, edge2));
-            if (rec.t < t_min || t_max < rec.t)
-                return false;
-
-            return true;
-        } else {
-            // two-sided
-            if (det > -EPSILON && det < EPSILON)
-                return false;
-            rec.u = dot(tvec, pvec) * inv_det;
-            if (rec.u < 0.0 || rec.u > 1.0)
-                return false;
-            vec3 qvec = cross(tvec, edge1);
-            rec.v = dot(r.direction(), qvec) * inv_det;
-            if (rec.v < 0.0 || rec.u + rec.v > 1.0)
-                return false;
-            rec.t = dot(edge2, qvec) * inv_det;
-            rec.p = r.point_at_parameter(rec.t);
-            rec.mat_ptr = mat_ptr;
-            rec.normal = unit_vector(cross(edge1, edge2));
-            if (rec.t < t_min || t_max < rec.t)
-                return false;
-            return true;
+        // std::cerr << inv_det << std::endl;
+        rec.t = dot(edge2, qvec);
+        rec.t *= inv_det;
+        rec.u *= inv_det;
+        rec.v *= inv_det;
+        {
+            // Check texture coordinate and set
+            vec3 vt1 = p.vt1 - p.vt0;
+            vec3 vt2 = p.vt2 - p.vt1;
+            if (vt1.norm() < 1e-7 && vt2.norm() < 1e-7) {
+                // FIXME: probably it doesn't have texture coord.
+            } else {
+                vec3 uv = p.vt0 + vt1 * rec.u + vt2 * rec.v;
+                rec.u = uv.x();
+                rec.v = uv.y();
+            }
         }
+        rec.mat_ptr = mat_ptr;
+        rec.p = r.point_at_parameter(rec.t);
+        rec.normal = unit_vector(cross(edge1, edge2));
+        if (rec.t < t_min || t_max < rec.t)
+            return false;
+
+        return true;
     }
 
     bool bounding_box(float t0, float t1, aabb& box) const {
-        vec3 mins(std::min({ vert0.x(), vert1.x(), vert2.x() }),
-                  std::min({ vert0.y(), vert1.y(), vert2.y() }),
-                  std::min({ vert0.z(), vert1.z(), vert2.z() }));
-        vec3 maxs(std::max({ vert0.x(), vert1.x(), vert2.x() }),
-                  std::max({ vert0.y(), vert1.y(), vert2.y() }),
-                  std::max({ vert0.z(), vert1.z(), vert2.z() }));
+        vec3 mins(std::min({ p.v0.x(), p.v1.x(), p.v2.x() }),
+                  std::min({ p.v0.y(), p.v1.y(), p.v2.y() }),
+                  std::min({ p.v0.z(), p.v1.z(), p.v2.z() }));
+        vec3 maxs(std::max({ p.v0.x(), p.v1.x(), p.v2.x() }),
+                  std::max({ p.v0.y(), p.v1.y(), p.v2.y() }),
+                  std::max({ p.v0.z(), p.v1.z(), p.v2.z() }));
         // Triangle may be axis-aligned.
         // Even in such case, boundingbox must have volume.
         for (int i = 0; i < 3; i++) {
@@ -227,8 +227,7 @@ public:
         box = aabb(mins, maxs);
         return true;
     }
-    vec3 vert0, vert1, vert2;
-    bool two_sided;
+    triangle_parameter p;
     material* mat_ptr;
 };
 

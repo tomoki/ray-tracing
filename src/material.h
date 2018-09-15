@@ -6,6 +6,7 @@
 #include "texture.h"
 #include "obj_loader.h"
 
+#include <algorithm>
 #include <cmath>
 
 vec3 reflect(const vec3& v, const vec3& n)
@@ -129,15 +130,38 @@ public:
 };
 
 class custom_material : public material {
-    custom_material(obj_material* mat) : obj_mat_ptr(mat) { }
+public:
+    // Copy obj_material in case of it's allocated in stack
+    custom_material(obj_material mat) : obj_mat(mat) { }
     bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const {
-        attenuation = obj_mat_ptr->diffuse;
+        attenuation = obj_mat.diffuse;
         vec3 target = rec.p + rec.normal + random_in_unit_sphere();
         scattered = ray(rec.p, target-rec.p);
-        return false;
+
+        // read texture
+        if (obj_mat.tex_color.size() > 0) {
+            int nx = obj_mat.tex_width;
+            int ny = obj_mat.tex_height;
+            int x = obj_mat.tex_width * rec.u;
+            int y = (1 - rec.v) * ny - 0.001;
+            x = std::clamp(x, 0, nx - 1);
+            y = std::clamp(y, 0, ny - 1);
+            // std::cerr << "x = " << x << " y = " << y << " nx = " << nx << " ny = " << ny << std::endl;
+
+            float r = int(obj_mat.tex_color[4 * x + 4 * nx * y + 0]) / 255.0;
+            float g = int(obj_mat.tex_color[4 * x + 4 * nx * y + 1]) / 255.0;
+            float b = int(obj_mat.tex_color[4 * x + 4 * nx * y + 2]) / 255.0;
+            float a = int(obj_mat.tex_color[4 * x + 4 * nx * y + 3]) / 255.0;
+            // std::cerr << r << " " << g << " " << b << " " << a << std::endl;
+            attenuation = vec3(r, g, b);
+            // if (a < 0.99)
+            //     return false;
+
+        }
+        return true;
     }
     vec3 emitted(float u, float v, const vec3& p) const {
-        return obj_mat_ptr->emissive_coefficient;
+        return obj_mat.emissive_coefficient;
     }
-    obj_material* obj_mat_ptr;
+    obj_material obj_mat;
 };

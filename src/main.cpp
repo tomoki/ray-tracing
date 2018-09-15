@@ -115,7 +115,11 @@ hitable* cornell_box()
     // list[i++] = new constant_medium(b, 0.01, new constant_texture(vec3(0.0, 0.0, 0.0)));
     // list[i++] = new triangle(vec3(255, 400, 255.0), vec3(410, 20.0, 255), vec3(50, 20.0, 255.0), false, mirror);
     // list[i++] = new xz_rect(0, 555, 0, 555, 10, mirror);
-    list[i++] = new triangle(vec3(555, 10.0, 0), vec3(0, 10, 0), vec3(555, 555.0, 555.0), false, mirror);
+    triangle_parameter param;
+    param.v0 = vec3(555, 10.0, 0);
+    param.v1 = vec3(0, 10, 0);
+    param.v2 = vec3(555, 555.0, 555.0),
+    list[i++] = new triangle(param, mirror);
     // list[i++] = new xz_triangle(0, 555, 555, 0, 0, 555, 10, mirror);
 
     return new hitable_list(list, i);
@@ -147,7 +151,11 @@ hitable* triangle_test()
         vec3 b(2*cos(theta), 0, 2*sin(theta));
         vec3 c(2*cos(theta), 2, 2*sin(theta));
         vec3 color(rand_float(), rand_float(), rand_float());
-        ret[ret_i++] = new triangle(c, b, a, true, new metal(vec3(0.7, 0.6, 0.5), 0.0));
+        triangle_parameter param;
+        param.v0 = c;
+        param.v1 = b;
+        param.v2 = a;
+        ret[ret_i++] = new triangle(param, new metal(vec3(0.7, 0.6, 0.5), 0.0));
     }
 
 
@@ -180,29 +188,75 @@ hitable* triangle_test()
     return new hitable_list(ret, ret_i);
 }
 
-
-hitable* model_test(model m)
+hitable* make_hitable_from_obj(const std::string& path)
 {
-    hitable** ret = new hitable*[30];
-    int ret_i = 0;
-    ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
-    ret[ret_i++] = new xz_rect(-10000, 10000, -10000, 10000, 1000, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
+    const int START_T = 0;
+    const int END_T = 1;
+    model m;
+    if (!load_obj(path, m)) {
+        std::cerr << "Faild to load model" << std::endl;
+        return nullptr;
+    }
+    for (const auto& material : m.materials) {
+        std::cerr << "-- " << material.name << " -- " << std::endl;
+        std::cerr << " * ambient     = " << material.ambient << std::endl;
+        std::cerr << " * diffuse     = " << material.diffuse << std::endl;
+        std::cerr << " * specular    = " << material.specular << std::endl;
+        std::cerr << " * specular(c) = " << material.specular_coefficient << std::endl;
+        std::cerr << " * emissive(c) = " << material.emissive_coefficient << std::endl;
+        std::cerr << " * shiness     = " << material.shiness << std::endl;
+        std::cerr << " * dissolved   = " << material.dissolved << std::endl;
+        std::cerr << " * illum       = " << material.illum << std::endl;
+    }
 
     hitable** objects = new hitable*[m.objects.size()];
     int objects_i = 0;
     for (const auto& obj : m.objects) {
         hitable** faces = new hitable*[obj.faces.size()];
         int face_i = 0;
-        vec3 random_color(rand_float(), rand_float(), rand_float());
-        for (const auto& f : obj.faces) {
-            vec3 a = m.vertices[f.vertices[0]];
-            vec3 b = m.vertices[f.vertices[1]];
-            vec3 c = m.vertices[f.vertices[2]];
-            faces[face_i++] = new triangle(a, b, c, false, new lambertian(new constant_texture(random_color)));
+        material* mat;
+        if (obj.material_name == "") {
+            vec3 random_color(rand_float(), rand_float(), rand_float());
+            mat = new lambertian(new constant_texture(random_color));
+        } else {
+            for (const auto& m : m.materials) {
+                if (obj.material_name == m.name) {
+                    mat = new custom_material(m);
+                    break;
+                }
+            }
+            if (mat == nullptr) {
+                std::cerr << "Material " << obj.material_name << " not found" << std::endl;
+                mat = new lambertian(new constant_texture(vec3(0.1, 0.1, 0.1)));
+            }
         }
-        objects[objects_i++] = new bvh_node(faces, face_i, 0, 1);
+        for (const auto& f : obj.faces) {
+            triangle_parameter param;
+            param.v0 = m.vertices[f.vertices_index[0]];
+            param.v1 = m.vertices[f.vertices_index[1]];
+            param.v2 = m.vertices[f.vertices_index[2]];
+
+            if (f.tex_coords_index) {
+
+            }
+            faces[face_i++] = new triangle(param, mat);
+        }
+        objects[objects_i++] = new bvh_node(faces, face_i, START_T, END_T);
     }
-    ret[ret_i++] = new bvh_node(objects, objects_i, 0, 1);
+    return new bvh_node(objects, objects_i, START_T, END_T);
+}
+
+hitable* model_test()
+{
+    hitable** ret = new hitable*[30];
+    int ret_i = 0;
+    ret[ret_i++] = new sphere(vec3(0, -1000, 0), 1000, new lambertian(new checker_texture(new constant_texture(vec3(0.3, 0.3, 0.3)), new constant_texture(vec3(0.9, 0.9, 0.9)))));
+    ret[ret_i++] = new xz_rect(-10000, 10000, -10000, 10000, 1000, new diffuse_light(new constant_texture(vec3(1.0, 1.0, 1.0))));
+    hitable* obj = make_hitable_from_obj("iruka.obj");
+    if (obj == nullptr)
+        throw std::runtime_error("Failed to load object");
+    ret[ret_i++] = obj;
+
     return new hitable_list(ret, ret_i);
 }
 
@@ -216,6 +270,23 @@ hitable* model_test(model m)
 
 int main(int argc, char** argv)
 {
+
+    // {
+    //     int nx, ny, nn;
+    //     unsigned char* tex_data = stbi_load("/home/tomoki/Downloads/つみ式ミクさんv1.11/瞳.png", &nx, &ny, &nn, STBI_rgb_alpha);
+    //     std::vector<unsigned char> data(4 * nx * ny, 231);
+    //     std::copy(tex_data, tex_data + 4 * nx * ny, data.begin());
+    //     for (int x = 0; x < nx; x++) {
+    //         for (int y = 0; y < ny; y++) {
+    //             int r = data[4 * x + 4 * nx * y + 0];
+    //             int g = data[4 * x + 4 * nx * y + 1];
+    //             int b = data[4 * x + 4 * nx * y + 2];
+    //             int a = data[4 * x + 4 * nx * y + 3];
+    //             std::cerr << "(" << x << ", " << y << ") = " << r << ", " << g << ", " << b << ", " << a << std::endl;
+    //         }
+    //     }
+    //     return 1;
+    // }
 
     // model model;
     // load_obj("box.obj", model);
@@ -276,12 +347,7 @@ int main(int argc, char** argv)
     // float aperture = 0.0;
     // camera cam(lookfrom, lookat, vec3(0, 1, 0), 40, float(nx) / float(ny), aperture, dist_to_focus, 0, 1);
 
-    model m;
-    if (!load_obj("robo.obj", m)) {
-        std::cerr << "Faild to load model" << std::endl;
-        return 1;
-    }
-    hitable* world = model_test(m);
+    hitable* world = model_test();
     vec3 lookfrom(12, 2, 3);
     vec3 lookat(0, 0.5, 0);
     float dist_to_focus = (lookfrom - lookat).length();
@@ -291,6 +357,7 @@ int main(int argc, char** argv)
     std::vector<std::vector<vec3>> colors(ny, std::vector<vec3>(nx));
 
     std::vector<std::thread> threads;
+    // int number_of_threads = 1;
     int number_of_threads = std::thread::hardware_concurrency();
     std::vector<std::queue<int>> y_per_threads(number_of_threads);
     std::vector<int64_t> done_pixels_per_threads(number_of_threads);

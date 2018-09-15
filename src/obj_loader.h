@@ -15,24 +15,32 @@ struct obj_material {
     float specular_coefficient { 0 };             // ns
     vec3 emissive_coefficient  { 1.0, 1.0, 1.0 }; // ke
     float shiness              { 1.0 };           // ni
-    float dissolved            { 1.0 }; // d, Tr
-    int illum                  { 0 }; // illum
+    float dissolved            { 1.0 };           // d, Tr
+    int illum                  { 0 };             // illum
+    std::vector<unsigned char> tex_color;         // Kd
+    int tex_width { 0 };
+    int tex_height { 0 };
 };
 
 struct face {
-    vec3 vertices;
+    std::vector<int> vertices_index { 0, 0, 0 };
+    std::optional<std::vector<int>> tex_coords_index;
+    std::optional<std::vector<int>> normals_index;
 };
 
 struct obj {
     std::string name;
-    obj_material material;
+    std::string material_name;
     std::vector<face> faces;
+    bool smooth { false };
 };
 
 struct model {
     std::vector<vec3> vertices;
     std::vector<vec3> normals; // per vertex
+    std::vector<vec3> tex_coords;
     std::vector<obj> objects;
+    std::vector<obj_material> materials;
 };
 
 std::vector<std::string> split(std::string str, char delim)
@@ -172,6 +180,39 @@ bool load_mtl(const std::string& path, std::vector<obj_material>& materials)
                 return false;
             }
             last_material.value().emissive_coefficient = { std::stof(v[1]), std::stof(v[2]), std::stof(v[3]) } ;
+        } else if (v[0] == "map_Kd") {
+            if (!last_material) {
+                std::cerr << "newmtl not found" << std::endl;
+                return false;
+            }
+            if (v.size() != 2) {
+                std::cerr << "Format not supported: " << s << std::endl;
+                return false;
+            }
+            int nx, ny, nn;
+            unsigned char* tex_data = stbi_load(v[1].c_str(), &nx, &ny, &nn, STBI_rgb_alpha);
+            if (!tex_data) {
+                std::cerr << "Failed to open: " << v[1] << std::endl;
+                continue;
+            }
+            std::vector<unsigned char> data(4 * nx * ny, 231);
+            // for (int x = 0; x < nx; x++) {
+            //     for (int y = 0; y < ny; y++) {
+            //         data[4 * x + 4 * nx * y + 0] = tex_data[4 * x + 4 * nx * y + 0];
+            //         data[4 * x + 4 * nx * y + 1] = tex_data[4 * x + 4 * nx * y + 1];
+            //         data[4 * x + 4 * nx * y + 2] = tex_data[4 * x + 4 * nx * y + 2];
+            //         data[4 * x + 4 * nx * y + 3] = 123;
+            //     }
+            // }
+            // for (int i = 0; i < data.size(); i++) {
+            //     std::cerr << int(data[i]) << " ";
+            // }
+            // std::cerr << std::endl;
+            std::copy(tex_data, tex_data + 4 * nx * ny, data.begin());
+            last_material.value().tex_color = data;
+            last_material.value().tex_width = nx;
+            last_material.value().tex_height = ny;
+            free(tex_data);
         } else {
             std::cerr << "Unknown: " << s << std::endl;
         }
@@ -212,13 +253,18 @@ bool load_obj(const std::string& path, model& model)
             // vertex
             vec3 vert(std::stof(v[1]), std::stof(v[2]), std::stof(v[3]));
             model.vertices.push_back(vert);
-        } else if(v[0] == "vn") {
+        } else if (v[0] == "vn") {
             // normal
             vec3 normal(std::stof(v[1]), std::stof(v[2]), 0);
             if (v.size() == 4) // have "w"
                 normal[2] = std::stof(v[3]);
             model.normals.push_back(normal);
-        } else if(v[0] == "f") {
+        } else if (v[0] == "vt") {
+            vec3 tex_coord(std::stof(v[1]), std::stof(v[2]), 0);
+            if (v.size() >= 4)
+                tex_coord[3] = std::stof(v[3]);
+            model.tex_coords.push_back(tex_coord);
+        } else if (v[0] == "f") {
             // face
             if (v.size() != 4) {
                 std::cerr << "Face has vertices more than 4: " << s << std::endl;
@@ -230,11 +276,37 @@ bool load_obj(const std::string& path, model& model)
                 // Formats:
                 // Vertex           | f v1 v2 v3
                 // Vertex+UV        | f v1/vt1 v2/vt2 v3/vt3
-                // Vertex+UV+Normal | f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
                 // Vertex+Normal    | f v1//vn1 v2//vn2 v3//vn3
+                // Vertex+UV+Normal | f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
                 auto sp = split(v[i], '/');
-                // FIXME: handle only vertex for now.
-                f.vertices[i - 1] = std::stoi(sp[0]) - 1;
+                if (sp.size() == 1) {
+                    // Vertex           | f v1 v2 v3
+                    f.vertices_index[i - 1] = std::stoi(sp[0]) - 1;
+                } else if(sp.size() == 2) {
+                    // Vertex+UV        | f v1/vt1 v2/vt2 v3/vt3
+                    f.vertices_index[i - 1] = std::stoi(sp[0]) - 1;
+                    if (!f.tex_coords_index)
+                        f.tex_coords_index = std::vector<int> { 0, 0, 0 };
+                    f.tex_coords_index.value()[i - 1] = std::stoi(sp[1]) - 1;
+                } else if (sp.size() == 3 && sp[1] == "") {
+                    // Vertex+Normal    | f v1//vn1 v2//vn2 v3//vn3
+                    f.vertices_index[i - 1] = std::stoi(sp[0]) - 1;
+                    if (!f.normals_index)
+                        f.normals_index = std::vector<int> { 0, 0, 0 };
+                    f.normals_index.value()[i - 1] = std::stoi(sp[2]) - 1;
+                } else if (sp.size() == 3) {
+                    // Vertex+UV+Normal | f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+                    f.vertices_index[i - 1] = std::stoi(sp[0]) - 1;
+                    if (!f.tex_coords_index)
+                        f.tex_coords_index = std::vector<int> { 0, 0, 0 };
+                    f.tex_coords_index.value()[i - 1] = std::stoi(sp[1]) - 1;
+
+                    if (!f.normals_index)
+                        f.normals_index = std::vector<int> { 0, 0, 0 };
+                    f.normals_index.value()[i - 1] = std::stoi(sp[2]) - 1;
+                } else {
+                    std::cerr << "Unknown format: " << s << std::endl;
+                }
             }
             current_obj.faces.push_back(f);
         } else if (v[0] == "mtllib") {
@@ -246,16 +318,17 @@ bool load_obj(const std::string& path, model& model)
                 std::cerr << "Could not load " << material_path << std::endl;
                 return false;
             }
-            for (const auto& material : materials) {
-                std::cerr << "-- " << material.name << " -- " << std::endl;
-                std::cerr << " * ambient     = " << material.ambient << std::endl;
-                std::cerr << " * diffuse     = " << material.diffuse << std::endl;
-                std::cerr << " * specular    = " << material.specular << std::endl;
-                std::cerr << " * specular(c) = " << material.specular_coefficient << std::endl;
-                std::cerr << " * emissive(c) = " << material.emissive_coefficient << std::endl;
-                std::cerr << " * shiness     = " << material.shiness << std::endl;
-                std::cerr << " * illum       = " << material.illum << std::endl;
-            }
+            std::copy(materials.begin(), materials.end(), std::back_inserter(model.materials));
+        } else if (v[0] == "usemtl") {
+            std::string mtl_name = v[1];
+            current_obj.material_name = v[1];
+        } else if (v[0] == "s") {
+            if (v[1] == "1" || v[0] == "on")
+                current_obj.smooth = true;
+            else if (v[1] == "0" || v[0] == "off")
+                current_obj.smooth = false;
+            else
+                std::cerr << "Unknown option for s: " << v[1] << std::endl;
         } else
             std::cerr << "Unknown: " << s << std::endl;
     }
