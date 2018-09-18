@@ -237,7 +237,9 @@ hitable* make_hitable_from_obj(const std::string& path)
             param.v2 = m.vertices[f.vertices_index[2]];
 
             if (f.tex_coords_index) {
-
+                param.vt0 = m.tex_coords[f.tex_coords_index.value()[0]];
+                param.vt1 = m.tex_coords[f.tex_coords_index.value()[1]];
+                param.vt2 = m.tex_coords[f.tex_coords_index.value()[2]];
             }
             faces[face_i++] = new triangle(param, mat);
         }

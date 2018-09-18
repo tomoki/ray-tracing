@@ -193,7 +193,7 @@ public:
         {
             // Check texture coordinate and set
             vec3 vt1 = p.vt1 - p.vt0;
-            vec3 vt2 = p.vt2 - p.vt1;
+            vec3 vt2 = p.vt2 - p.vt0;
             if (vt1.norm() < 1e-7 && vt2.norm() < 1e-7) {
                 // FIXME: probably it doesn't have texture coord.
             } else {
